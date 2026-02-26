@@ -1,0 +1,2255 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal X — איפה ההזמנה שלי?</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+        /* ============================================================
+       DESIGN TOKENS — from spec analysis
+       Fonts  : ITC Roswell (compressed grotesque) → 'Arial Narrow'
+                Agipo Ext → Arial caps
+                Roboto / Narkiss Block → system stack
+       Colors : #000  #FFF  #FEFA03  #00C853  #E5E5E5  #888  #E0E0E0  #FF6B00
+       Radius : 0px  everywhere
+       Borders: 1px solid
+    ============================================================ */
+        :root {
+            --black: #000000;
+            --white: #FFFFFF;
+            --accent: #FEFA03;
+            /* yellow – primary CTA / active stepper */
+            --green: #00C853;
+            /* success checkmark */
+            --gray-light: #E5E5E5;
+            /* inactive stepper, thumb placeholder */
+            --gray-mid: #888888;
+            /* muted labels, table header text */
+            --border: #E0E0E0;
+            /* card/table dividers */
+            --orange: #FF6B00;
+            /* delay alert accent */
+            --bg-alert: #FFF9F6;
+            /* alert banner fill */
+            --bg-row: #F5F5F5;
+            /* table header row */
+        }
+
+        /* ---- Reset ---- */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        body {
+            font-family: 'Heebo', 'Roboto', 'Narkiss Block', 'Segoe UI', Arial, sans-serif;
+            background: var(--white);
+            color: var(--black);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* ============================================================
+       1. TOP BAR — 36px, black bg
+       Right (RTL start): cart + wishlist icons with badges
+       Center: yellow pill promo button
+       Left  (RTL end):   flag + language toggle
+    ============================================================ */
+        .top-bar {
+            background: var(--black);
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        /* Right group — icons + badges */
+        .top-bar-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            justify-content: flex-start;
+            /* RTL start = visual right */
+        }
+
+        .top-bar-icon-wrap {
+            position: relative;
+            cursor: pointer;
+            color: var(--white);
+            font-size: 17px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            background: var(--accent);
+            color: var(--black);
+            font-size: 9px;
+            font-weight: 700;
+            min-width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        /* Center — yellow pill promo */
+        .top-bar-center {
+            flex: 0 auto;
+        }
+
+        .top-bar-promo {
+            background: var(--accent);
+            color: var(--black);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            border: none;
+            font-family: inherit;
+        }
+
+        /* Left group — language selector */
+        .top-bar-left {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            /* RTL end = visual left */
+            gap: 6px;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* ============================================================
+       2. MARQUEE STRIP — black bg, white text
+       font-weight: 800 · letter-spacing: 0.2em
+    ============================================================ */
+        .marquee-strip {
+            background: var(--black);
+            color: var(--white);
+            height: 32px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: scrollLeft 28s linear infinite;
+        }
+
+        .marquee-track span {
+            font-family: 'Arial Narrow', Arial, sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            padding-left: 48px;
+        }
+
+        @keyframes scrollLeft {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ============================================================
+       3. NAV BAR — black bg, white links, centered, 48px
+    ============================================================ */
+        .nav-bar {
+            background: var(--black);
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* links centered */
+            padding: 0 24px;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .nav-links li a {
+            display: block;
+            padding: 0 9px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--white);
+            white-space: nowrap;
+        }
+
+        .nav-links li a.heb {
+            text-transform: none;
+            font-weight: 400;
+            letter-spacing: 0;
+        }
+
+        .nav-links li a.active {
+            font-weight: 700;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        /* ============================================================
+       MAIN CONTENT AREA
+    ============================================================ */
+        .content {
+            width: 100%;
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            box-sizing: border-box;
+        }
+
+        /* ============================================================
+       4. AI ALERT BANNER
+       Border on RIGHT side (RTL) in orange (#FF6B00)
+       Warm off-white fill · content: delay warning
+    ============================================================ */
+        .ai-alert {
+            border-right: 4px solid var(--orange);
+            background: var(--bg-alert);
+            padding: 14px 24px 14px 24px;
+            /* full-width block between nav and main content – no absolute/fixed */
+        }
+
+        .ai-alert-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 9px;
+        }
+
+        .ai-alert-body {
+            font-size: 13px;
+            color: #2a2a2a;
+            line-height: 1.75;
+            margin-bottom: 14px;
+        }
+
+        .ai-alert-body strong {
+            font-weight: 700;
+        }
+
+        .ai-alert-cta {
+            background: none;
+            border: 1.5px solid var(--black);
+            padding: 7px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 0;
+            color: var(--black);
+        }
+
+        /* ============================================================
+       5. PAGE HEADER + ORDER NUMBER SUB-LINE
+    ============================================================ */
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        h1.page-title {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .order-number-sub {
+            text-align: center;
+            font-size: 15px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 36px;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: var(--black);
+            border: none;
+            padding: 10px 22px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 0;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        /* ============================================================
+       6. TIMELINE — 5 steps, RTL
+       Circles row: 20px default, 28px yellow for steps 4+5
+       Connector: 1px gray · labels below · 11px #666
+    ============================================================ */
+        .timeline-wrap {
+            max-width: 800px;
+            margin: 0 auto 36px;
+        }
+
+        /* Circles row — fixed height, all nodes vertically centered
+       row-reverse: first DOM child = rightmost circle (no dir tricks) */
+        .tl-row {
+            display: flex;
+            direction: rtl;
+            align-items: center;
+            position: relative;
+            height: 60px;
+        }
+
+        /* 1px gray connector from center of step 1 to center of step 5
+       Each step = 20% wide → center at 10% from each edge           */
+        .tl-row::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: 10%;
+            left: 10%;
+            height: 2px;
+            background: #E0E0E0;
+            z-index: 0;
+            transition: background 150ms ease;
+        }
+
+        /* Gradient classes — set by JS per state.
+           Each step = 20% → centers at 100/75/50/25/0% of the connector line.
+           Yellow extends from right (done side) up to the active node. */
+        .tl-row.grad-0::before { background: #E0E0E0; }
+        .tl-row.grad-1::before { background: linear-gradient(to right, #E0E0E0 0%, #E0E0E0 75%, #FEFA03 75%, #FEFA03 100%); }
+        .tl-row.grad-2::before { background: linear-gradient(to right, #E0E0E0 0%, #E0E0E0 50%, #FEFA03 50%, #FEFA03 100%); }
+        .tl-row.grad-3::before { background: linear-gradient(to right, #E0E0E0 0%, #E0E0E0 25%, #FEFA03 25%, #FEFA03 100%); }
+        .tl-row.grad-4::before { background: #FEFA03; }
+
+        .tl-step {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+
+        /* Base node */
+        .tl-node {
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Steps 1–3: small idle circles */
+        .tl-node.idle {
+            width: 28px;
+            height: 28px;
+            background: #CCCCCC;
+        }
+
+        /* Step 4 — active: large yellow, package icon, pulse */
+        .tl-node.current {
+            width: 44px;
+            height: 44px;
+            background: var(--accent);
+            border: 2px solid var(--accent);
+            font-size: 20px;
+            animation: pulse-yellow 2s infinite;
+        }
+
+        /* Step 5 — done: large yellow, checkmark */
+        .tl-node.done {
+            width: 44px;
+            height: 44px;
+            background: var(--accent);
+            border: 2px solid var(--accent);
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(254, 250, 3, 0.75);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(254, 250, 3, 0.00);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(254, 250, 3, 0.00);
+            }
+        }
+
+        /* Labels row — row-reverse mirrors circle order: first child = rightmost */
+        .tl-labels {
+            display: flex;
+            direction: rtl;
+            margin-top: 14px;
+        }
+
+        .tl-label {
+            flex: 1;
+            font-size: 13px;
+            color: #888888;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .tl-label.current {
+            font-weight: 700;
+            color: var(--black);
+        }
+
+        /* ============================================================
+       SHARED CARD SHELL
+    ============================================================ */
+        .card {
+            width: 100%;
+            border: 1px solid var(--border);
+            padding: 22px;
+            margin-bottom: 24px;
+        }
+
+        .card-eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--gray-mid);
+            margin-bottom: 16px;
+        }
+
+        /* ============================================================
+       7. ACTION CARD — two full-width buttons, height 48px exact
+    ============================================================ */
+        .btn-full {
+            display: block;
+            width: 100%;
+            height: 48px;
+            padding: 0 20px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            border-radius: 0;
+            font-family: inherit;
+            text-align: center;
+        }
+
+        .btn-full+.btn-full {
+            margin-top: 10px;
+        }
+
+        .btn-black {
+            background: var(--black);
+            color: var(--white);
+            border: none;
+        }
+
+        .btn-lime {
+            background: var(--accent);
+            color: var(--black);
+            border: none;
+        }
+
+        .btn-outline {
+            background: var(--white);
+            color: var(--black);
+            border: 1px solid var(--black);
+        }
+
+        .action-note {
+            font-size: 11px;
+            color: var(--gray-mid);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        /* ============================================================
+       7. ACTION HUB — dynamic state component
+    ============================================================ */
+        .action-hub {
+            width: 100%;
+            margin-bottom: 28px;
+            transition: all 150ms ease;
+        }
+
+        .hub-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: #000000;
+            text-align: center;
+            margin-bottom: 8px;
+            font-family: 'Heebo', inherit;
+        }
+
+        .hub-micro {
+            font-size: 14px;
+            color: #666666;
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto 24px;
+            line-height: 1.6;
+        }
+
+        .hub-actions {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .hub-btn {
+            display: block;
+            width: 100%;
+            height: 52px;
+            font-size: 16px;
+            font-family: 'Heebo', 'Roboto', 'Narkiss Block', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 0;
+            text-align: center;
+            margin-bottom: 10px;
+            border: none;
+            transition: filter 150ms ease;
+        }
+
+        .hub-btn:hover {
+            filter: brightness(110%);
+        }
+
+        .hub-btn-black {
+            background: #000000;
+            color: #ffffff;
+            border: none;
+        }
+
+        .hub-btn-outline {
+            background: #ffffff;
+            color: #000000;
+            border: 1.5px solid #000000;
+        }
+
+        .hub-btn-yellow {
+            background: #FEFA03;
+            color: #000000;
+            border: none;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        /* ============================================================
+       8. ORDER DETAILS CARD
+    ============================================================ */
+        .order-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 20px;
+        }
+
+        .delivery-box {
+            background: #F5F5F5;
+            padding: 14px 16px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #000000;
+            margin-bottom: 10px;
+        }
+
+        .distant-link {
+            font-size: 13px;
+            color: #333333;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .distant-link a {
+            color: #333333;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        .meta-row {
+            font-size: 14px;
+            color: #333333;
+            padding: 14px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 18px 0;
+        }
+
+        .product-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+        }
+
+        .product-table th {
+            background: var(--bg-row);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-mid);
+            padding: 10px 12px;
+            text-align: right;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .product-table td {
+            padding: 14px 12px;
+            font-size: 14px;
+            vertical-align: middle;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .product-thumb {
+            display: block;
+            width: 64px;
+            height: 64px;
+            background: var(--gray-light);
+        }
+
+        .product-name {
+            font-size: 14px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .product-sub {
+            font-size: 13px;
+            color: var(--gray-mid);
+            margin-top: 4px;
+        }
+
+        /* ============================================================
+       9. CONTACT SECTION
+       Title centered · two equal cards side-by-side
+       Right card: MAIL (black icon) · Left card: WHATSAPP (green)
+    ============================================================ */
+        .contact-section {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .contact-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .contact-cards {
+            display: flex;
+            gap: 16px;
+        }
+
+        .contact-card {
+            flex: 1;
+            border: 1px solid var(--border);
+            background: var(--white);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .contact-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .contact-icon.mail {
+            background: var(--black);
+            color: var(--white);
+        }
+
+        .contact-icon.whatsapp {
+            background: none;
+        }
+
+        /* SVG provides its own green circle */
+
+        .contact-label {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--black);
+        }
+
+        /* ============================================================
+       10. FOOTER
+       Black bg · 5-column grid · lime social icons
+       Newsletter: white input + lime submit · muted copyright
+    ============================================================ */
+        .site-footer {
+            background: var(--black);
+            color: var(--white);
+            padding: 56px 40px 0;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 32px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-bottom: 48px;
+        }
+
+        .footer-heading {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: var(--white);
+            margin-bottom: 20px;
+        }
+
+        .footer-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+        }
+
+        .footer-links li a {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.72);
+        }
+
+        .social-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .social-btn {
+            width: 30px;
+            height: 30px;
+            background: var(--accent);
+            color: var(--black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .newsletter-row {
+            display: flex;
+        }
+
+        .newsletter-input {
+            background: var(--white);
+            border: none;
+            padding: 9px 12px;
+            font-size: 12px;
+            flex: 1;
+            border-radius: 0;
+            font-family: inherit;
+            direction: rtl;
+        }
+
+        .newsletter-submit {
+            background: var(--accent);
+            color: var(--black);
+            border: none;
+            padding: 9px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 0;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #1c1c1c;
+            text-align: center;
+            padding: 18px;
+            font-size: 11px;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.40);
+            text-transform: uppercase;
+        }
+
+        /* --- NEW UI ELEMENTS STYLES --- */
+
+        .demo-panel {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: #000000;
+            border: 2px solid #FEFA03;
+            border-radius: 8px;
+            padding: 16px;
+            z-index: 9999;
+            width: 160px;
+        }
+
+        .demo-panel-label {
+            font-size: 10px;
+            color: #FEFA03;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 10px;
+            font-family: 'Heebo', inherit;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .demo-btn {
+            display: block;
+            width: 100%;
+            height: 36px;
+            border-radius: 0;
+            font-family: 'Heebo', 'Roboto', 'Narkiss Block', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 6px;
+            border: 1px solid #444;
+            background: transparent;
+            color: #ffffff;
+            text-align: center;
+            transition: all 150ms ease;
+        }
+
+        .demo-btn:last-child {
+            margin-bottom: 0;
+        }
+
+        .demo-btn.active {
+            background: #FEFA03 !important;
+            color: #000000 !important;
+            font-weight: 700 !important;
+            border-color: #FEFA03 !important;
+        }
+
+        .ai-banner-wrap {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 300ms ease;
+            background: #FFF8E7;
+            border-right: 4px solid #FF8C00;
+            max-width: 800px;
+            margin: 0 auto;
+            opacity: 0;
+        }
+
+        .ai-banner-wrap.visible {
+            max-height: 300px;
+            margin-bottom: 24px;
+            opacity: 1;
+        }
+
+        .ai-banner-content {
+            padding: 16px 32px;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #000;
+        }
+
+        .ai-banner-content .small-btn {
+            margin-top: 10px;
+            background: #000;
+            color: #FFF;
+            font-size: 12px;
+            padding: 6px 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-family: inherit;
+        }
+
+        .modal-overlay-a,
+        .modal-overlay-b {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 200ms ease;
+        }
+
+        .modal-overlay-a {
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            direction: rtl;
+        }
+
+        .modal-overlay-b {
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1001;
+            direction: rtl;
+        }
+
+        .modal-overlay-a.visible,
+        .modal-overlay-b.visible {
+            display: flex !important;
+            opacity: 1;
+        }
+
+        .modal-box-a {
+            background: #FFF;
+            max-width: 480px;
+            width: 90%;
+            padding: 40px;
+            position: relative;
+        }
+
+        .modal-box-b {
+            background: #000;
+            color: #FFF;
+            max-width: 460px;
+            width: 90%;
+            padding: 48px;
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            font-size: 20px;
+            cursor: pointer;
+            line-height: 1;
+            background: transparent;
+            border: none;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        .modal-box-a .close-btn {
+            color: #000;
+        }
+
+        .modal-box-b .close-btn {
+            color: #FFF;
+        }
+
+        .modal-title-a {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #000;
+        }
+
+        .modal-divider {
+            border: none;
+            border-top: 1px solid #E0E0E0;
+            margin: 16px 0;
+        }
+
+        .modal-divider-b {
+            border: none;
+            border-top: 1px solid #333;
+            margin: 24px 0;
+        }
+
+        .timeline-list {
+            list-style: none;
+            font-size: 14px;
+            line-height: 2.2;
+        }
+
+        .timeline-list li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tl-icon.gray {
+            color: #888;
+            font-weight: 700;
+        }
+
+        .tl-icon.orange {
+            color: #FF8C00;
+            font-weight: 700;
+        }
+
+        .tl-icon.black {
+            color: #000;
+            font-weight: 700;
+        }
+
+        .tl-text.gray {
+            color: #888;
+        }
+
+        .tl-text.orange {
+            color: #FF8C00;
+        }
+
+        .tl-text.black {
+            color: #000;
+            font-weight: 700;
+        }
+
+        .btn-yellow-full {
+            width: 100%;
+            background: #FEFA03;
+            color: #000;
+            border: none;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 0;
+            font-family: inherit;
+        }
+
+        .gray-link {
+            display: block;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+            margin-top: 16px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .tx-logo-small {
+            color: #FFF;
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            text-align: center;
+            font-family: 'Arial Narrow', Arial, sans-serif;
+            font-weight: 800;
+        }
+
+        .star-icon {
+            color: #FEFA03;
+            font-size: 32px;
+            text-align: center;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .t-white-14 {
+            color: #FFF;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .t-white-16 {
+            color: #FFF;
+            font-size: 16px;
+            margin: 16px 0;
+            line-height: 1.4;
+        }
+
+        .t-yellow-36 {
+            color: #FEFA03;
+            font-size: 36px;
+            font-weight: 800;
+            margin: 8px 0;
+        }
+
+        .ai-decision-box {
+            border: 1px solid #333;
+            padding: 16px;
+            margin: 24px 0;
+            text-align: right;
+        }
+
+        .ai-decision-title {
+            color: #FEFA03;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .ai-decision-row {
+            color: #FFF;
+            font-size: 13px;
+            line-height: 1.8;
+            display: block;
+        }
+
+        .btn-yellow-b {
+            width: 100%;
+            height: 48px;
+            background: #FEFA03;
+            color: #000;
+            border: none;
+            border-radius: 0;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .small-white-note {
+            color: #FFF;
+            font-size: 11px;
+            text-align: center;
+            margin-top: 12px;
+            display: block;
+        }
+
+        @keyframes pulse-orange {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.6); }
+            50%       { box-shadow: 0 0 0 12px rgba(255, 140, 0, 0); }
+        }
+
+        @keyframes pulse-yellow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(254, 250, 3, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 0 8px rgba(254, 250, 3, 0);
+            }
+        }
+
+        .marquee-track {
+            animation: scrollLeft 25s linear infinite !important;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            font-weight: 500;
+            color: #222222;
+            text-align: center;
+            max-width: 620px;
+            margin: 12px auto 32px;
+            line-height: 1.7;
+        }
+
+        .tl-node,
+        .tl-label,
+        .action-card-content,
+        .card {
+            transition: all 200ms ease;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px 16px;
+            }
+
+            h1.page-title {
+                font-size: 22px;
+            }
+
+            .tl-node {
+                width: 20px;
+                height: 20px;
+            }
+
+            .tl-label {
+                font-size: 10px;
+            }
+
+            .card {
+                padding: 16px;
+            }
+        }
+
+        /* ============================================================
+           DELAY / AI STATE — new elements
+        ============================================================ */
+
+        /* Orange warning node */
+        .tl-node.delay {
+            width: 44px;
+            height: 44px;
+            background: #FF8C00;
+            border: 2px solid #FF8C00;
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        /* Always-orange demo button */
+        .demo-btn-orange {
+            background: #FF8C00 !important;
+            color: #000000 !important;
+            font-weight: 700 !important;
+            border-color: #FF8C00 !important;
+        }
+
+        /* AI delay banner */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .ai-banner {
+            background: #FFF3E0;
+            border-right: 4px solid #FF8C00;
+            border-radius: 4px;
+            padding: 20px 24px;
+            margin: 0 auto 24px;
+            max-width: 700px;
+            animation: slideDown 300ms ease;
+        }
+
+        .ai-banner-alert {
+            font-size: 13px;
+            color: #FF8C00;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .ai-banner-text {
+            font-size: 14px;
+            color: #333333;
+            line-height: 1.7;
+        }
+
+        /* AI Compensation Modal */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.97); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-ai-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-ai-overlay.visible {
+            display: flex;
+        }
+
+        .modal-ai-box {
+            background: #000000;
+            color: #ffffff;
+            max-width: 480px;
+            width: 90%;
+            padding: 48px 40px;
+            position: relative;
+            animation: fadeIn 200ms ease;
+        }
+
+        .modal-ai-close {
+            position: absolute;
+            top: 16px;
+            left: 20px;
+            color: #ffffff;
+            font-size: 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            line-height: 1;
+        }
+
+        .modal-ai-logo {
+            font-size: 11px;
+            letter-spacing: 0.25em;
+            color: #ffffff;
+            text-align: center;
+            margin-bottom: 24px;
+            font-family: 'Heebo', inherit;
+        }
+
+        .modal-ai-divider {
+            border: none;
+            border-top: 1px solid #333333;
+            margin: 0 0 24px;
+        }
+
+        .modal-ai-divider-sm {
+            border: none;
+            border-top: 1px solid #333333;
+            margin: 12px 0;
+        }
+
+        .modal-ai-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+            margin: 0 0 8px;
+        }
+
+        .modal-ai-subtitle {
+            font-size: 13px;
+            color: #888888;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-ai-toggle {
+            display: flex;
+        }
+
+        .modal-ai-toggle-btn {
+            flex: 1;
+            height: 40px;
+            border-radius: 0;
+            font-family: 'Heebo', 'Roboto', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            background: #111111;
+            color: #666666;
+            border: 1px solid #333333;
+            transition: all 150ms ease;
+        }
+
+        .modal-ai-toggle-btn.active {
+            background: #FEFA03;
+            color: #000000;
+            font-weight: 700;
+            border-color: #FEFA03;
+        }
+
+        .modal-ai-log {
+            border: 1px solid #333333;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .modal-ai-log-header {
+            font-size: 12px;
+            color: #FEFA03;
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+        }
+
+        .modal-ai-log-row {
+            font-size: 13px;
+            color: #ffffff;
+            margin-bottom: 6px;
+            font-family: monospace;
+        }
+
+        .modal-ai-log-comp {
+            font-size: 15px;
+            color: #FEFA03;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        .modal-ai-log-time {
+            font-size: 11px;
+            color: #555555;
+            margin-top: 4px;
+        }
+
+        .modal-ai-amount {
+            font-size: 48px;
+            font-weight: 800;
+            color: #FEFA03;
+            text-align: center;
+            line-height: 1.1;
+            margin-top: 20px;
+        }
+
+        .modal-ai-amount-sub {
+            font-size: 14px;
+            color: #888888;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .modal-ai-confirm {
+            background: #FEFA03;
+            color: #000000;
+            width: 100%;
+            height: 52px;
+            border-radius: 0;
+            border: none;
+            font-family: 'Heebo', 'Roboto', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+            display: block;
+        }
+
+        .modal-ai-footer {
+            font-size: 11px;
+            color: #555555;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        /* ── Pulse glow for yellow hub button ───────────────────── */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(254, 250, 3, 0.5); }
+            50%       { box-shadow: 0 0 10px 6px rgba(254, 250, 3, 0.15); }
+        }
+
+        /* ── CTA pulse for delay state buttons ──────────────────── */
+        @keyframes cta-pulse {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-3px); }
+        }
+
+        .hub-btn-cta-black,
+        .hub-btn-cta-yellow {
+            transition: all 150ms ease;
+            animation: cta-pulse 2s ease-in-out infinite;
+        }
+
+        .hub-btn-cta-black:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            animation: none;
+            filter: none;
+        }
+
+        .hub-btn-cta-yellow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(254, 250, 3, 0.4);
+            animation: none;
+            filter: none;
+        }
+
+        /* ── Tooltip ────────────────────────────────────────────── */
+        .ai-tooltip-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: help;
+            margin-right: 6px;
+        }
+
+        .ai-tooltip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 1px solid #555;
+            font-size: 10px;
+            color: #888;
+            font-style: normal;
+            line-height: 1;
+        }
+
+        .ai-tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 130%;
+            right: 0;
+            background: #222222;
+            color: #ffffff;
+            font-size: 11px;
+            padding: 7px 10px;
+            white-space: nowrap;
+            transition: opacity 150ms ease;
+            font-family: 'Heebo', inherit;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .ai-tooltip-wrap:hover .ai-tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* ── Transparency Modal ─────────────────────────────────── */
+        .modal-transp-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-transp-overlay.visible {
+            display: flex;
+        }
+
+        .modal-transp-box {
+            background: #ffffff;
+            color: #000000;
+            max-width: 460px;
+            width: 90%;
+            padding: 40px 36px;
+            position: relative;
+            animation: fadeIn 200ms ease;
+            direction: rtl;
+        }
+
+        .modal-transp-close {
+            position: absolute;
+            top: 16px;
+            left: 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #666;
+            line-height: 1;
+        }
+
+        .modal-transp-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 16px;
+            font-family: 'Heebo', inherit;
+        }
+
+        .modal-transp-text {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+
+        /* Vertical timeline */
+        .transp-timeline {
+            display: flex;
+            flex-direction: column;
+            margin: 24px 0 28px;
+        }
+
+        .transp-tl-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            position: relative;
+            padding-bottom: 28px;
+        }
+
+        .transp-tl-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .transp-tl-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            top: 24px;
+            right: 11px;
+            width: 2px;
+            bottom: 0;
+            background: #E0E0E0;
+        }
+
+        .transp-tl-item.tl-done::before { background: #FEFA03; }
+
+        .transp-tl-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            z-index: 1;
+        }
+
+        .transp-tl-item.tl-done    .transp-tl-dot { background: #FEFA03; color: #000; }
+        .transp-tl-item.tl-current .transp-tl-dot { background: #FF8C00; color: #fff; font-size: 14px; }
+        .transp-tl-item.tl-pending .transp-tl-dot { background: #E0E0E0; color: #888; font-size: 14px; }
+
+        .transp-tl-label { font-size: 14px; font-weight: 600; color: #000; line-height: 1.4; }
+        .transp-tl-sub   { font-size: 12px; color: #888; margin-top: 2px; }
+
+        .modal-transp-cta {
+            display: block;
+            width: 100%;
+            height: 48px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 0;
+            font-size: 15px;
+            font-weight: 600;
+            font-family: 'Heebo', inherit;
+            cursor: pointer;
+        }
+
+        /* ============================================================
+           MOBILE RESPONSIVE — screens under 768px
+           Adds only new rules; does not override existing desktop CSS.
+        ============================================================ */
+        @media (max-width: 768px) {
+
+            /* ── Body: reserve space for fixed bottom demo panel ── */
+            body {
+                padding-bottom: 60px;
+            }
+
+            /* ── Page header: stack title + button vertically ── */
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .btn-accent {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* ── Timeline: scale down active / done / delay nodes ──
+               (existing rule covers .tl-node.idle via .tl-node{20px}
+               but .tl-node.current/.done/.delay have higher specificity
+               so must be overridden explicitly)                      */
+            .tl-node.idle {
+                width: 20px;
+                height: 20px;
+            }
+
+            .tl-node.current,
+            .tl-node.done,
+            .tl-node.delay {
+                width: 32px;
+                height: 32px;
+                font-size: 15px;
+            }
+
+            /* ── Action hub font scaling ── */
+            .hub-title {
+                font-size: 20px;
+            }
+
+            .hub-micro {
+                font-size: 13px;
+            }
+
+            .hub-actions {
+                max-width: 100%;
+            }
+
+            .hub-btn {
+                font-size: 15px;
+                height: 48px;
+            }
+
+            /* ── Demo switcher: horizontal scrollable bar at bottom ── */
+            .demo-panel {
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                border-radius: 0;
+                border: none;
+                border-top: 2px solid #FEFA03;
+                padding: 8px 10px;
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 6px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .demo-panel-label {
+                display: none;
+            }
+
+            .demo-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: auto;
+                flex-shrink: 0;
+                margin-bottom: 0;
+                padding: 0 10px;
+                white-space: nowrap;
+                font-size: 11px;
+            }
+
+            /* ── All modals: full screen on mobile ── */
+            .modal-overlay-a,
+            .modal-overlay-b {
+                align-items: flex-start;
+            }
+
+            .modal-ai-overlay,
+            .modal-transp-overlay {
+                align-items: flex-start;
+            }
+
+            .modal-box-a,
+            .modal-box-b {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                padding: 32px 20px;
+                overflow-y: auto;
+            }
+
+            .modal-ai-box {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                padding: 40px 20px;
+                overflow-y: auto;
+            }
+
+            .modal-transp-box {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                padding: 40px 20px;
+                overflow-y: auto;
+            }
+
+            /* ── Modal font scaling ── */
+            .modal-title-a {
+                font-size: 18px;
+            }
+
+            .modal-ai-title {
+                font-size: 18px;
+            }
+
+            .modal-ai-amount {
+                font-size: 36px;
+            }
+
+            .t-yellow-36 {
+                font-size: 28px;
+            }
+
+            /* ── Product table: horizontal scroll if needed ── */
+            .product-table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* ── Page subtitle ── */
+            .page-subtitle {
+                font-size: 14px;
+            }
+
+            /* ── AI banner ── */
+            .ai-banner {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<img src="NEW_HEADER.png"
+     style="width:100%; display:block; margin:0; padding:0;">
+    <main class="content">
+
+        <!-- ============================================================
+         5. PAGE HEADER + ORDER NUMBER SUB-LINE
+    ============================================================ -->
+        <div class="page-header">
+            <h1 class="page-title">איפה ההזמנה שלי?</h1>
+            <button class="btn-accent">🔍 איתור הזמנה נוספת</button>
+        </div>
+        <p class="page-subtitle">ההזמנה בדרך! כאן ניתן לעקוב אחרי כל שלב בזמן אמת, לשנות כתובת או לבטל במידת הצורך — הכל בקליק וללא המתנה לנציג.</p>
+        <div class="order-number-sub">מספר הזמנה 033080003</div>
+
+        <!-- ============================================================
+         6. TIMELINE — 5 steps, RTL
+         Circles 1-3: 20px gray · Circle 4: 28px yellow 📦 · Circle 5: 28px yellow ✓
+         Labels right-to-left below the row
+    ============================================================ -->
+        <div class="timeline-wrap" aria-label="שלבי ההזמנה">
+
+            <!-- direction:rtl → 1st DOM child = RIGHTMOST circle -->
+            <div class="tl-row">
+                <!-- 1st in DOM = RIGHTMOST: הזמנה התקבלה — completed -->
+                <div class="tl-step">
+                    <div class="tl-node done">✓</div>
+                </div>
+                <!-- 2nd: הזמנה נארזה — ACTIVE yellow #FEFA03, 📦, pulse -->
+                <div class="tl-step">
+                    <div class="tl-node current" aria-current="step">📦</div>
+                </div>
+                <!-- 3rd: המתנה להגעה לנקודת השילוח — idle -->
+                <div class="tl-step">
+                    <div class="tl-node idle"></div>
+                </div>
+                <!-- 4th: המתנה בדרך עם שליח — idle -->
+                <div class="tl-step">
+                    <div class="tl-node idle"></div>
+                </div>
+                <!-- 5th in DOM = LEFTMOST: קבלת הזמנה לייב — idle -->
+                <div class="tl-step">
+                    <div class="tl-node idle"></div>
+                </div>
+            </div>
+
+            <!-- direction:rtl → labels align 1:1 with circles above -->
+            <div class="tl-labels">
+                <div class="tl-label">הזמנה<br>התקבלה</div>
+                <div class="tl-label current">הזמנה<br>נארזה</div>
+                <div class="tl-label">המתנה להגעה<br>לנקודת השילוח</div>
+                <div class="tl-label">המתנה בדרך<br>עם שליח</div>
+                <div class="tl-label">קבלת הזמנה<br>לייב</div>
+            </div>
+
+        </div>
+
+        <!-- AI Delay Banner — hidden by default, shown in delay state -->
+        <div id="ai-banner" class="ai-banner" style="display:none;">
+            <div class="ai-banner-alert">⚠️ עיכוב זוהה על ידי המערכת</div>
+            <p class="ai-banner-text">זיהינו עיכוב בהזמנה שלך ואנחנו ממש מתנצלים. מערכת ה-AI הקצתה עבורך פיצוי אוטומטי — לחצו למטה לפרטים ומימוש.</p>
+        </div>
+
+        <!-- ============================================================
+         7. ACTION HUB — dynamic, state-driven component
+    ============================================================ -->
+        <div class="action-hub">
+            <div class="hub-title">מצב הזמנה: ההזמנה נארזה</div>
+            <p class="hub-micro">החבילה ארוזה ומוכנה ליציאה! ניתן עדיין לשנות את היעד לנקודת איסוף קרובה.</p>
+            <div class="hub-actions">
+                <button class="hub-btn hub-btn-yellow">📦 העברה לנקודת איסוף (PUDO)</button>
+                <button class="hub-btn hub-btn-outline">✕ ביטול הזמנה</button>
+            </div>
+        </div>
+
+        <!-- ============================================================
+         8. ORDER DETAILS CARD
+    ============================================================ -->
+        <div class="card">
+            <div class="delivery-box">תאריך לקבלת החבילה עד: 03.11.25 (5 ימי עסקים)</div>
+            <a href="#" class="distant-link">למעט ישובים מרוחקים</a>
+
+            <div class="meta-row">מספר הזמנה: 033080003</div>
+            <div class="meta-row">מספר מעקב: TX330800035-TX</div>
+            <div class="meta-row">תאריך ושעת ביצוע הזמנה: 26/10/2025 22:30</div>
+
+            <table class="product-table">
+                <thead>
+                    <tr>
+                        <th>תמונת מוצר</th>
+                        <th>שם מוצר</th>
+                        <th>מק"ט</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="product-thumb" role="img" aria-label="תמונת מוצר"></span></td>
+                        <td>
+                            <div class="product-name">סניקרס Nike Air Force 1 '07 / גברים</div>
+                            <div class="product-sub">צבע: לבן</div>
+                            <div class="product-sub">מידה: 45</div>
+                        </td>
+                        <td>X90282000509</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <img src="customer_service.png"
+             style="width:100%; max-width:800px; display:block; margin:0 auto;">
+
+    </main>
+
+<img src="footer.png"
+     style="width:100%; display:block; margin:0; padding:0;">
+
+    <!-- Demo Switcher Panel -->
+    <div class="demo-panel">
+        <div class="demo-panel-label">🎮 מצב הדגמה</div>
+        <button class="demo-btn" data-state="התקבלה">1 — התקבלה</button>
+        <button class="demo-btn" data-state="נארזה">2 — נארזה</button>
+        <button class="demo-btn" data-state="שילוח">3 — שילוח</button>
+        <button class="demo-btn demo-btn-orange" data-state="עיכוב AI" data-fixed="orange">⚠️ עיכוב AI</button>
+        <button class="demo-btn" data-state="עם שליח">4 — עם שליח</button>
+        <button class="demo-btn" data-state="נמסרה">5 — נמסרה</button>
+    </div>
+
+    <!-- Modal A: מה קורה עם ההזמנה שלך -->
+    <div class="modal-overlay-a" id="modal-a">
+        <div class="modal-box-a">
+            <button class="close-btn" onclick="closeModalA()">X</button>
+            <div class="modal-title-a">מה קורה עם ההזמנה שלך?</div>
+            <hr class="modal-divider">
+            <ul class="timeline-list">
+                <li><span class="tl-icon gray">✓</span> <span class="tl-text gray">"הזמנה התקבלה" — 26/10/2025
+                        22:30</span></li>
+                <li><span class="tl-icon gray">✓</span> <span class="tl-text gray">"נארזה במחסן" — 27/10/2025
+                        08:15</span></li>
+                <li><span class="tl-icon gray">✓</span> <span class="tl-text gray">"יצאה למרכז הפצה" — 28/10/2025
+                        14:00</span></li>
+                <li><span class="tl-icon orange">⚠️</span> <span class="tl-text orange">"עומס במרכז הפצה רמלה" —
+                        29/10/2025</span></li>
+                <li><span class="tl-icon black">⏳</span> <span class="tl-text black">"צפי הגעה מעודכן" — מחר 26.02 עד
+                        18:00</span></li>
+            </ul>
+            <hr class="modal-divider">
+            <button class="btn-yellow-full" onclick="openModalB()">↩ בטל וקבל זיכוי ₪50</button>
+            <a class="gray-link" onclick="closeModalA()">אמתין — הבנתי</a>
+        </div>
+    </div>
+
+    <!-- Modal B: בטל וקבל זיכוי -->
+    <div class="modal-overlay-b" id="modal-b">
+        <div class="modal-box-b">
+            <button class="close-btn" onclick="closeModalB()">X</button>
+            <div class="tx-logo-small">TERMINAL X</div>
+            <hr class="modal-divider-b">
+            <span class="star-icon">★</span>
+            <div class="text-center t-white-14">הזמנה #033080003</div>
+
+            <div class="text-center t-white-16">
+                זיהינו עיכוב של 48+ שעות.<br>
+                מכיוון שאתה לקוח VIP —
+            </div>
+
+            <div class="text-center t-yellow-36">הוספנו ₪50 לחשבונך</div>
+            <div class="text-center t-white-14">אוטומטית. עכשיו. ללא נציג.</div>
+            <hr class="modal-divider-b">
+
+            <div class="ai-decision-box">
+                <div class="ai-decision-title">🤖 AI Decision Log</div>
+                <div class="ai-decision-row">
+                    <span>עיכוב: 48+ שעות ............ ✓</span>
+                </div>
+                <div class="ai-decision-row">
+                    <span>לקוח VIP (4 הזמנות) ........ ✓</span>
+                </div>
+                <div class="ai-decision-row">
+                    <span>החלטה: זיכוי ₪50 ........... ✓</span>
+                </div>
+                <div class="ai-decision-row" style="color: #888; margin-top: 4px;">
+                    <span>לקוח רגיל = קופון ₪30</span>
+                </div>
+                <div class="ai-decision-row" style="color: #888; font-size: 11px; margin-top: 4px;">
+                    <span>זמן עיבוד: 0.3 שניות</span>
+                </div>
+            </div>
+
+            <hr class="modal-divider-b">
+            <button class="btn-yellow-b" onclick="closeModalB()">אישרתי — תודה ✓</button>
+            <span class="small-white-note">הזיכוי יופיע בחשבונך תוך 24 שעות</span>
+        </div>
+    </div>
+
+    <!-- Modal: AI Compensation -->
+    <div class="modal-ai-overlay" id="modal-ai-comp" onclick="if(event.target===this)closeAICompModal()">
+        <div class="modal-ai-box">
+            <button class="modal-ai-close" onclick="closeAICompModal()">✕</button>
+
+            <div class="modal-ai-logo">TERMINAL X</div>
+            <hr class="modal-ai-divider">
+
+            <div class="modal-ai-title">זיהינו עיכוב של 48+ שעות</div>
+            <div class="modal-ai-subtitle">בחר סוג לקוח להצגת הפיצוי:</div>
+
+            <div class="modal-ai-toggle">
+                <button id="btn-regular" class="modal-ai-toggle-btn active" onclick="setCustomerType('regular')">לקוח רגיל</button>
+                <button id="btn-vip" class="modal-ai-toggle-btn" onclick="setCustomerType('vip')">לקוח VIP ⭐</button>
+            </div>
+
+            <div class="modal-ai-log">
+                <div class="modal-ai-log-header">🤖 AI Decision Log</div>
+                <div class="modal-ai-log-row">חריגה מ-SLA (מעל 48 שעות): ✓</div>
+                <div id="ai-log-customer" class="modal-ai-log-row">סטטוס לקוח:
+                    <span id="ai-log-customer-value">רגיל ✓</span>
+                    <span class="ai-tooltip-wrap">
+                        <i class="ai-tooltip-icon">ℹ</i>
+                        <span class="ai-tooltip-text">גובה הפיצוי מותאם אישית להיסטוריית הרכישות שלך</span>
+                    </span>
+                </div>
+                <hr class="modal-ai-divider-sm">
+                <div id="ai-log-comp" class="modal-ai-log-comp">פיצוי מחושב: קופון ₪30</div>
+                <div class="modal-ai-log-time">זמן עיבוד: 0.3 שניות</div>
+            </div>
+
+            <div id="ai-amount" class="modal-ai-amount">קופון ₪30</div>
+            <div class="modal-ai-amount-sub">לחשבונך — אוטומטית</div>
+
+            <hr class="modal-ai-divider">
+
+            <button id="ai-confirm-btn" class="modal-ai-confirm" onclick="closeAICompModal()">קבלתי את הקופון ₪30 ✓</button>
+            <div class="modal-ai-footer">הפיצוי יופיע בחשבונך תוך 24 שעות</div>
+        </div>
+    </div>
+
+    <!-- Modal: Transparency / "Why the delay" -->
+    <div class="modal-transp-overlay" id="modal-transparency" onclick="if(event.target===this)closeTransparencyModal()">
+        <div class="modal-transp-box">
+            <button class="modal-transp-close" onclick="closeTransparencyModal()">✕</button>
+
+            <div class="modal-transp-title">🔍 שקיפות מלאה: מה קורה עם החבילה?</div>
+            <p class="modal-transp-text">אנחנו פה כדי לעשות סדר. המערכת זיהתה שהחבילה נמצאת במרכז המיון "דרום". עקב עומס חריג בסריקות, נוצר עיכוב זמני. אנחנו צופים שהיא תצא להפצה ב-24 השעות הקרובות.</p>
+
+            <div class="transp-timeline">
+                <div class="transp-tl-item tl-done">
+                    <div class="transp-tl-dot">✓</div>
+                    <div>
+                        <div class="transp-tl-label">מחסן / אריזה</div>
+                        <div class="transp-tl-sub">הושלם</div>
+                    </div>
+                </div>
+                <div class="transp-tl-item tl-current">
+                    <div class="transp-tl-dot">⚠</div>
+                    <div>
+                        <div class="transp-tl-label">מרכז מיון "דרום"</div>
+                        <div class="transp-tl-sub">עיכוב זמני — עומס בסריקות</div>
+                    </div>
+                </div>
+                <div class="transp-tl-item tl-pending">
+                    <div class="transp-tl-dot">🚚</div>
+                    <div>
+                        <div class="transp-tl-label">משלוח אליכם</div>
+                        <div class="transp-tl-sub">צפוי ב-24 השעות הקרובות</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="modal-transp-cta" onclick="closeTransparencyModal()">הבנתי — תודה</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btns      = document.querySelectorAll('.demo-btn');
+            const nodes     = document.querySelectorAll('.tl-node');
+            const labels    = document.querySelectorAll('.tl-label');
+            const hub       = document.querySelector('.action-hub');
+            const tlRow     = document.querySelector('.tl-row');
+            const aiBanner  = document.getElementById('ai-banner');
+
+            /* ── State definitions ───────────────────────────────────── */
+            const STATES = {
+                'התקבלה': {
+                    grad:       'grad-0',
+                    doneNodes:  [],
+                    activeNode: 0,
+                    title:      'מצב הזמנה: הזמנתך התקבלה',
+                    micro:      'הכל נראה מצוין! בשלב זה ניתן לבצע שינויים מהירים בפרטי ההזמנה.',
+                    buttons: `
+                        <button class="hub-btn hub-btn-black">✕ ביטול הזמנה וזיכוי מיידי</button>
+                        <button class="hub-btn hub-btn-outline">📍 שינוי כתובת למשלוח</button>`
+                },
+                'נארזה': {
+                    grad:       'grad-1',
+                    doneNodes:  [0],
+                    activeNode: 1,
+                    title:      'מצב הזמנה: ההזמנה נארזה',
+                    micro:      'החבילה ארוזה ומוכנה ליציאה! ניתן עדיין לשנות את היעד לנקודת איסוף קרובה.',
+                    buttons: `
+                        <button class="hub-btn hub-btn-yellow">📦 העברה לנקודת איסוף (PUDO)</button>
+                        <button class="hub-btn hub-btn-outline">✕ ביטול הזמנה</button>`
+                },
+                'שילוח': {
+                    grad:       'grad-2',
+                    doneNodes:  [0, 1],
+                    activeNode: 2,
+                    title:      'מצב הזמנה: הועברה לחברת השילוח',
+                    micro:      'ההזמנה יצאה לדרך! החבילה עברה למרכז המיון של חברת ההפצה ותגיע אליכם בקרוב.',
+                    buttons:    ''
+                },
+                'עם שליח': {
+                    grad:       'grad-3',
+                    doneNodes:  [0, 1, 2],
+                    activeNode: 3,
+                    title:      'מצב הזמנה: בדרך אליכם',
+                    micro:      'ההזמנה תגיע היום! ניתן להשאיר הנחיות לשליח או ליצור קשר במידת הצורך.',
+                    buttons: `
+                        <button class="hub-btn hub-btn-black">📞 יצירת קשר עם השליח</button>
+                        <button class="hub-btn hub-btn-outline">📝 הוראות השארה ליד הדלת</button>`
+                },
+                'נמסרה': {
+                    grad:       'grad-4',
+                    doneNodes:  [0, 1, 2, 3],
+                    activeNode: 4,
+                    title:      'מצב הזמנה: נמסרה בהצלחה ✓',
+                    micro:      'תתחדשו! במידה והפריט לא מתאים ניתן להחזיר אותו בקלות ובמהירות.',
+                    buttons: `
+                        <button class="hub-btn hub-btn-black">❌ דווח: החבילה לא הגיעה</button>
+                        <button class="hub-btn hub-btn-outline">↩ פתיחת בקשת החזרה מהירה</button>`
+                },
+                'עיכוב AI': {
+                    grad:       'grad-2',
+                    doneNodes:  [0, 1],
+                    activeNode: 2,
+                    isDelay:    true,
+                    title:      'מצב הזמנה: ⚠️ עיכוב מזוהה',
+                    titleColor: '#FF8C00',
+                    micro:      'המערכת זיהתה חריגה מהצפי המקורי.<br>בחר את הפעולה המתאימה לך:',
+                    buttons: `
+                        <button class="hub-btn hub-btn-black hub-btn-cta-black" onclick="openTransparencyModal()">🔍 הסבר מלא — איפה החבילה?</button>
+                        <button class="hub-btn hub-btn-yellow hub-btn-cta-yellow" onclick="openAICompModal()">🎁 בטל וקבל פיצוי אוטומטי</button>`
+                }
+            };
+
+            /* ── Update function ─────────────────────────────────────── */
+            function updateState(stateName) {
+                const s = STATES[stateName];
+                if (!s) return;
+
+                /* Reset all nodes to idle */
+                nodes.forEach(n => {
+                    n.className      = 'tl-node idle';
+                    n.innerHTML      = '';
+                    n.style.animation = '';
+                });
+                /* Reset all labels */
+                labels.forEach(l => { l.className = 'tl-label'; });
+
+                /* Apply done nodes */
+                s.doneNodes.forEach(i => {
+                    nodes[i].className = 'tl-node done';
+                    nodes[i].innerHTML = '✓';
+                });
+
+                /* Apply active node — orange for delay, yellow for all others */
+                if (s.isDelay) {
+                    nodes[s.activeNode].className      = 'tl-node delay';
+                    nodes[s.activeNode].innerHTML      = '!';
+                    nodes[s.activeNode].style.animation = 'pulse-orange 2s infinite';
+                } else {
+                    nodes[s.activeNode].className      = 'tl-node current';
+                    nodes[s.activeNode].style.animation = 'pulse-yellow 2s infinite';
+                }
+
+                /* Apply active label */
+                labels[s.activeNode].className = 'tl-label current';
+
+                /* Update connector gradient */
+                tlRow.className = 'tl-row ' + s.grad;
+
+                /* Show / hide AI banner */
+                if (aiBanner) aiBanner.style.display = s.isDelay ? 'block' : 'none';
+
+                /* Update action hub */
+                const titleStyle = s.titleColor ? ` style="color:${s.titleColor}"` : '';
+                hub.innerHTML = `
+                    <div class="hub-title"${titleStyle}>${s.title}</div>
+                    <p class="hub-micro">${s.micro}</p>
+                    <div class="hub-actions">${s.buttons}</div>`;
+
+                /* Update demo buttons — orange button stays orange, ignores active class */
+                btns.forEach(b => {
+                    if (b.dataset.fixed === 'orange') {
+                        b.className = 'demo-btn demo-btn-orange';
+                    } else {
+                        b.className = 'demo-btn' + (b.dataset.state === stateName ? ' active' : '');
+                    }
+                });
+            }
+
+            /* ── Boot ───────────────────────────────────────────────── */
+            btns.forEach(b => b.addEventListener('click', e => updateState(e.target.dataset.state)));
+            updateState('נארזה');
+        });
+
+    function openModalA() {
+      document.getElementById('modal-a').classList.add('visible');
+    }
+    function closeModalA() {
+      document.getElementById('modal-a').classList.remove('visible');
+    }
+    function openModalB() {
+      closeModalA();
+      document.getElementById('modal-b').classList.add('visible');
+    }
+    function closeModalB() {
+      document.getElementById('modal-b').classList.remove('visible');
+    }
+
+    /* ── AI Compensation Modal ───────────────────────────────── */
+    function openAICompModal() {
+        document.getElementById('modal-ai-comp').classList.add('visible');
+        setCustomerType('regular'); // always opens on regular default
+    }
+    function closeAICompModal() {
+        document.getElementById('modal-ai-comp').classList.remove('visible');
+    }
+    function setCustomerType(type) {
+        const isVIP = type === 'vip';
+        document.getElementById('btn-regular').className = 'modal-ai-toggle-btn' + (isVIP ? '' : ' active');
+        document.getElementById('btn-vip').className     = 'modal-ai-toggle-btn' + (isVIP ? ' active' : '');
+        document.getElementById('ai-log-customer-value').textContent = isVIP
+            ? 'VIP (4 הזמנות) ✓'
+            : 'רגיל ✓';
+        document.getElementById('ai-log-comp').textContent = isVIP
+            ? 'פיצוי מחושב: זיכוי ₪50'
+            : 'פיצוי מחושב: קופון ₪30';
+        document.getElementById('ai-amount').textContent = isVIP ? 'זיכוי ₪50' : 'קופון ₪30';
+        document.getElementById('ai-confirm-btn').textContent = isVIP
+            ? 'קבלתי את הזיכוי ₪50 ✓'
+            : 'קבלתי את הקופון ₪30 ✓';
+    }
+
+    /* ── Transparency Modal ──────────────────────────────────── */
+    function openTransparencyModal() {
+        document.getElementById('modal-transparency').classList.add('visible');
+    }
+    function closeTransparencyModal() {
+        document.getElementById('modal-transparency').classList.remove('visible');
+    }
+    </script>
+
+</body>
+
+</html>
